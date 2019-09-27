@@ -123,6 +123,17 @@ class Board extends React.Component {
     console.log(st.clickedNum);
   }
 
+  gameover() {
+    let count = 0;
+    let show = this.state.showed.slice();
+    for (let i = 0; i < show.length; i++) {
+      if (show[i] === "X") {
+        count += 1;
+      }
+    }
+    return count === 16;
+  }
+
   handleClick(i) {
     if (this.state.showed[i]) {
       return
@@ -187,15 +198,42 @@ class Board extends React.Component {
     );
   }
 
+  restart(_ev) {
+    let st = {
+      showed: Array(16).fill(null),
+      tileValue: random_tileValue(),
+      lastClicked: -1,
+      clickedNum: 0
+    };
+    this.setState(st);
+  }
+
+
   render() {
     let rows = [];
     for (let i = 0; i < 4; i++) {
       rows.push(this.renderRow(i));
     }
+    let game_status;
+    if (this.gameover()) {
+      game_status = "congratulation! Completed in " + this.state.clickedNum.toString() + " clicks.";
+    } else {
+      game_status = "Number of Clicks: " + this.state.clickedNum.toString();
+    }
+    let restart = <p><button onClick={this.restart.bind(this)}>Restart</button></p>;
+
     return (
-      <div className = "board">
+    <div className = "board">
+      <div className = "rows">
         {rows}
       </div>
+      <div className = "game_status">
+        {game_status}
+      </div>
+      <div className = "restart">
+        {restart}
+      </div>
+    </div>
     );
   }
 
