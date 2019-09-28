@@ -109,19 +109,6 @@ class Board extends React.Component {
     return st;
   }
 
-  log() {
-    console.log(this.state.showed);
-    console.log(this.state.tileValue);
-    console.log(this.state.lastClicked);
-    console.log(this.state.clickedNum);
-  }
-
-  logSt(st) {
-    console.log(st.showed);
-    console.log(st.tileValue);
-    console.log(st.lastClicked);
-    console.log(st.clickedNum);
-  }
 
   gameover() {
     let count = 0;
@@ -157,9 +144,6 @@ class Board extends React.Component {
     if(value[last] === value[i]) {
       st1 = this.exposeValue(i, -1);
       st2 = this.markCompleted(last, i);
-      console.log("=== st1..st2");
-      this.logSt(st1);
-      this.logSt(st2);
     }
     //if this click is the second in a pair and does not match the 
     //previous click, expose this click first and then hide this pair 
@@ -167,9 +151,6 @@ class Board extends React.Component {
     else {
       st1 = this.exposeValue(i, -1);
       st2 = this.hide(last, i);
-      console.log("!== st1..st2");
-      this.logSt(st1);
-      this.logSt(st2);
     }
     
     this.setState(st1);
@@ -239,42 +220,4 @@ class Board extends React.Component {
 
 }
 
-class Starter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { left: false };
-  }
-
-  swap(_ev) {
-    let state1 = _.assign({}, this.state, { left: !this.state.left });
-    this.setState(state1);
-  }
-
-  hax(_ev) {
-    alert("hax!");
-  }
-
-  render() {
-    let button = <div className="column" onMouseMove={this.swap.bind(this)}>
-      <p><button onClick={this.hax.bind(this)}>Click Me</button></p>
-    </div>;
-
-    let blank = <div className="column">
-      <p>Nothing here.</p>
-    </div>;
-
-    if (this.state.left) {
-      return <div className="row">
-        {button}
-        {blank}
-      </div>;
-    }
-    else {
-      return <div className="row">
-        {blank}
-        {button}
-      </div>;
-    }
-  }
-}
 
