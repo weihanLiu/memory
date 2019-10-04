@@ -1,3 +1,9 @@
-<div id="root">
-  React app loading...
+<<div class="row">
+  <div class="column">
+    <h2>Memory Game</h2>
+    <%= form_for @conn, "/game", fn f -> %>
+      <p>Enter Name:  <%= text_input f, :name %></p>
+      <p><%= submit "Start Game" %></p>
+    <% end %>  
+  </div>
 </div>
