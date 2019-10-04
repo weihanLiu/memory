@@ -1,0 +1,64 @@
+defmodule MemoryWeb.GamesChannel do
+  use MemoryWeb, :channel
+
+
+  alias Memory.Game
+  
+
+  def join("games:" <> name, payload, socket) do
+    if authorized?(payload) do
+      game = Game.new()
+      socket = socket
+      |> assign(:game, game)
+      |> assign(:name, name)
+      {:ok, %{"join" => name, "game" => Game.client_view(game)}, socket}
+    else
+      {:error, %{reason: "unauthorized"}}
+    end
+  end
+
+  # Channels can be used in a request/response fashion
+  # by sending replies to requests from the client
+  def handle_in("click", %{"click" => i}, socket) do
+    name = socket.assigns[:name]
+    case Game.click(socket.assign[:game], i) do
+      [st1, st2] ->
+        socket = assign(socket, :game, st1)
+        Process.send_after(self(), {:delayState, st2}, 1000)
+        {:reply, {:ok, %{"game" => Game.client_view(st1)}}, socket}
+      game ->
+        socket = assign(socket, :game, game)
+        {:reply, {"ok", %{"game" => Game.client_view(game)}}, socket}
+    end
+  end
+
+  def handle_info({:delayState, st2}, socket) do
+    socket = assign(socket, :game, st2)
+    push(socket, "delayState", %{"game" => game.slient_view(st2)})
+    {:noreply, socket}
+  end
+  
+  def handle_in("restart", payload, socket) do
+    game = Game.new()
+    socket = socket |>assign(:game, game)
+    {:reply, {:ok, %{"game" => Game.client_view(game)}}, socket}
+  end
+
+  def handle_in("gameover", payload, socket) do
+    {:reply, {:ok, %{"gameover" => Game.gameover(game)}}, socket}
+  end
+
+
+
+  # It is also common to receive messages from the client and
+  # broadcast to everyone in the current topic (games:lobby).
+  def handle_in("shout", payload, socket) do
+    broadcast socket, "shout", payload
+    {:noreply, socket}
+  end
+
+  # Add authorization logic here as required.
+  defp authorized?(_payload) do
+    true
+  end
+end

@@ -2,25 +2,85 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import _ from 'lodash';
 
-export default function game_init(root) {
-  ReactDOM.render(<Game />, root);
+export default function game_init(root, channel) {
+  ReactDOM.render(<Game channel={channel}/>, root);
 }
 
 
 class Game extends React.Component {
+  constructor(props) {
+    super(props)
+    
+    this.channel = props.channel;
+    this.state = {
+      showed: [],
+      clickedNum: 0
+    }
+    this.channel
+        .join()
+        .receive("ok", this.got_view.bind(this))
+        .receive("error", resp => {cosole.log("Unable to join", resp); });
+  }
+
+  got_view(view) {
+    console.log("new view", view);
+    this.setState(view.game);
+  }
+
+
+  handleClick(i) {
+    this.channel.push("click", {click: i})
+      .receive("ol", this.got_view.bind(this));
+  }
+
+  restart() {
+    this.channel.push("restart", {})
+        .receive("ok", this.got_view.bind(this));
+  }
+
+  gameover() {
+    let count = 0;
+    let show = this.state.shwed.slice();
+    for (let i = 0; i < show.length; i++) {
+      if (show[i] === "X") {
+        count += 1;
+      }
+    }
+    return count === 16;
+  }
+
+
   render() {
+    let game_status;
+    if (this.gameover()) {
+      game_status = "Congratulation! Completed in " + this.state.clickedNum.toString() + " clicks.";
+    } else {
+      game_status = "number of clicks: " + this.state.clickedNum.toString();
+    }
+    let restart = <p><button onClick = {this.restart.bind(this)}>Restart</button></p>
+    let board = <Board root = {this}
+                      showed = {this.state.showed}
+                      onClick = {() +> this.handleClick(i)/>
     return (
     <div className="game">
       <div className="title">
         <h2>{["Memory Game"]}</h2>
       </div>
       <div className="board">
-        <Board />
+        {board} 
+      </div>
+      <div className = "game_status">
+        {game_status}
+      </div>
+      <div className = "restart">
+        {restart}
       </div>
     </div> 
     );
   }
 }
+
+
 
 
 
@@ -32,137 +92,12 @@ function Tile(props) {
   );
 }
 
-function random_tileValue() {
-  let a = Array.from("ABCDEFGH");
-  a = a.concat(a);
-  shuffle_arr(a);
-  return a;
-}
-
-
-// using Fisher-Yates shuffle algorithm
-// cited from https://en.wikipedia.org/wiki/Fisher–Yates_shuffle#The_modern_algorithm
-function shuffle_arr(a) {
-  for(let i = a.length - 1; i > 0; i--) {
-    let random = Math.floor(Math.random() * i);
-    let temp = a[i];
-    a[i] = a[random];
-    a[random] = temp;
-  }
-}
-
-
-
 class Board extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      showed: Array(16).fill(null),
-      tileValue: random_tileValue(),
-      lastClicked: -1,
-      clickedNum: 0
-    };
-  }
-
-  //return state that expose value at tile i, 
-  //and change the lastClicked to input "last"
-  exposeValue(i, last) {
-    let showedCopy = this.state.showed.slice();
-    let tileValue_copy = this.state.tileValue.slice();
-    let c = this.state.clickedNum + 1;
-    showedCopy[i] = tileValue_copy[i];
-    let st = {
-      showed: showedCopy,
-      tileValue:tileValue_copy,
-      lastClicked: last,
-      clickedNum: c
-    };
-    return st;
-    
-  }
-
-  //mark a pair as complete, shown as "X"
-  markCompleted(i, j) {
-    let show = this.state.showed.slice();
-    show[i] = "X";
-    show[j] = "X";
-    let st = {
-      showed: show,
-      tileValue: this.state.tileValue,
-      lastClicked: -1,
-      clickedNum: this.state.clickedNum + 1
-    };
-    return st;
-  }
-
-  //hide a pair
-  hide(i, j) {
-    let show = this.state.showed.slice();
-    show[i] = null;
-    show[j] = null;
-    let st = {
-      showed: show,
-      tileValue: this.state.tileValue,
-      lastClicked: -1,
-      clickedNum: this.state.clickedNum + 1
-    };
-    return st;
-  }
-
-
-  gameover() {
-    let count = 0;
-    let show = this.state.showed.slice();
-    for (let i = 0; i < show.length; i++) {
-      if (show[i] === "X") {
-        count += 1;
-      }
-    }
-    return count === 16;
-  }
-
-  handleClick(i) {
-    if (this.state.showed[i]) {
-      return
-    }
-
-    let show = this.state.showed.slice();
-    let value = this.state.tileValue.slice();
-    let last = this.state.lastClicked;
-    let st1;
-    let st2;
-    //if this click is first in a pair, expose this click
-    //and change the lastclick to i
-    if (last === -1) {
-      st1 = this.exposeValue(i, i);
-      this.setState(st1);
-      return;
-    }
-    //if this click is second in a pair and match with previos click
-    //expose the click first and mark the pair as completed
-    //also change the lastClicked to -1
-    if(value[last] === value[i]) {
-      st1 = this.exposeValue(i, -1);
-      st2 = this.markCompleted(last, i);
-    }
-    //if this click is the second in a pair and does not match the 
-    //previous click, expose this click first and then hide this pair 
-    //also change the lastClicked to -1
-    else {
-      st1 = this.exposeValue(i, -1);
-      st2 = this.hide(last, i);
-    }
-    
-    this.setState(st1);
-    setTimeout(() => {this.setState(st2)}, 1000);
-  }
-
-
 
   renderTile(i) {
     return (
-      <Tile showedValue = {this.state.showed[i]}
-            onClick = {() => this.handleClick(i)}
+      <Tile showedValue = {props.showed[i]}
+            onClick = {props.onClick}}
       />
     );
   }
@@ -178,42 +113,15 @@ class Board extends React.Component {
       </div>
     );
   }
-
-  restart(_ev) {
-    let st = {
-      showed: Array(16).fill(null),
-      tileValue: random_tileValue(),
-      lastClicked: -1,
-      clickedNum: 0
-    };
-    this.setState(st);
-  }
-
-
+  
   render() {
     let rows = [];
     for (let i = 0; i < 4; i++) {
       rows.push(this.renderRow(i));
     }
-    let game_status;
-    if (this.gameover()) {
-      game_status = "congratulation! Completed in " + this.state.clickedNum.toString() + " clicks.";
-    } else {
-      game_status = "Number of Clicks: " + this.state.clickedNum.toString();
-    }
-    let restart = <p><button onClick={this.restart.bind(this)}>Restart</button></p>;
-
     return (
     <div className = "board">
-      <div className = "rows">
-        {rows}
-      </div>
-      <div className = "game_status">
-        {game_status}
-      </div>
-      <div className = "restart">
-        {restart}
-      </div>
+       {rows}
     </div>
     );
   }
