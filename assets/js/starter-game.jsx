@@ -20,6 +20,7 @@ class Game extends React.Component {
         .join()
         .receive("ok", this.got_view.bind(this))
         .receive("error", resp => {cosole.log("Unable to join", resp); });
+    this.channel.on("update", this.got_view.bind(this));
   }
 
   got_view(view) {
