@@ -22,10 +22,7 @@ import game_init from "./starter-game";
 
 $(() => {
   let root = $('#root')[0];
-  let channel = socket.channel("games:default", {})
-  channel.join()
-      .receive("ok", resp => { console.log("Joined successfully", resp) })
-      .receive("error", resp => { console.log("Unable to join", resp) })  
+  let channel = socket.channel("games:" + window.gameName, {})
   game_init(root, channel);
 });
 

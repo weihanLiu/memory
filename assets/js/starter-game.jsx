@@ -3,24 +3,27 @@ import ReactDOM from 'react-dom';
 import _ from 'lodash';
 
 export default function game_init(root, channel) {
-  ReactDOM.render(<Game channel={channel}/>, root);
+  ReactDOM.render(<Board channel={channel}/>, root);
 }
 
 
-class Game extends React.Component {
+class Board extends React.Component {
   constructor(props) {
     super(props)
-    
+    console.log("a")
     this.channel = props.channel;
     this.state = {
       showed: [],
       clickedNum: 0
-    }
+    };
+    console.log("before join")
     this.channel
         .join()
         .receive("ok", this.got_view.bind(this))
         .receive("error", resp => {cosole.log("Unable to join", resp); });
+    console.log("after join")
     this.channel.on("update", this.got_view.bind(this));
+    console.log("b")
   }
 
   got_view(view) {
@@ -31,7 +34,7 @@ class Game extends React.Component {
 
   handleClick(i) {
     this.channel.push("click", {click: i})
-      .receive("ol", this.got_view.bind(this));
+      .receive("ok", this.got_view.bind(this));
   }
 
   restart() {
@@ -41,7 +44,7 @@ class Game extends React.Component {
 
   gameover() {
     let count = 0;
-    let show = this.state.shwed.slice();
+    let show = this.state.showed;
     for (let i = 0; i < show.length; i++) {
       if (show[i] === "X") {
         count += 1;
@@ -49,26 +52,52 @@ class Game extends React.Component {
     }
     return count === 16;
   }
+  
+  renderTile(i) {
+    return (
+      <Tile key = {"tile" + i}
+	    showedValue = {this.state.showed[i]}
+            onClick = {() => this.handleClick(i)}
+      />
+    );
+  }
 
+  renderRow(row) {
+    let tiles = [];
+    for(let i = 0; i < 4; i++) {
+      tiles.push(this.renderTile(row * 4 + i))
+    }
+    return (
+      <div key = {"row" + row}
+	    className = "board-row">
+        {tiles}
+      </div>
+    );
+  }
 
   render() {
+    console.log("start render")
+    let rows = [];
+    for (let i = 0; i < 4; i++) {
+      rows.push(this.renderRow(i));
+    }
+
     let game_status;
+    console.log("before if")
     if (this.gameover()) {
+	    console.log("in if")
       game_status = "Congratulation! Completed in " + this.state.clickedNum.toString() + " clicks.";
     } else {
+	    console.log("in else")
       game_status = "number of clicks: " + this.state.clickedNum.toString();
     }
+	  console.log("before restart")
     let restart = <p><button onClick = {this.restart.bind(this)}>Restart</button></p>
-    let board = <Board root = {this}
-                      showed = {this.state.showed}
-                      onClick = {() +> this.handleClick(i)/>
+    console.log("before board")
     return (
     <div className="game">
-      <div className="title">
-        <h2>{["Memory Game"]}</h2>
-      </div>
       <div className="board">
-        {board} 
+        {rows} 
       </div>
       <div className = "game_status">
         {game_status}
@@ -93,40 +122,5 @@ function Tile(props) {
   );
 }
 
-class Board extends React.Component {
-
-  renderTile(i) {
-    return (
-      <Tile showedValue = {props.showed[i]}
-            onClick = {props.onClick}}
-      />
-    );
-  }
-
-  renderRow(row) {
-    let tiles = [];
-    for(let i = 0; i < 4; i++) {
-      tiles.push(this.renderTile(row * 4 + i))
-    }
-    return (
-      <div className = "board-row">
-        {tiles}
-      </div>
-    );
-  }
-  
-  render() {
-    let rows = [];
-    for (let i = 0; i < 4; i++) {
-      rows.push(this.renderRow(i));
-    }
-    return (
-    <div className = "board">
-       {rows}
-    </div>
-    );
-  }
-
-}
 
 
